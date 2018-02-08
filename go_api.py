@@ -96,6 +96,7 @@ def get_content():
   ]
   content = []
   for net in networks:
+    print("Pulling for network " + net)
     url = "http://api.discovery.com/feeds/vidora/{0}/vidora-catalog".format(net)
     file = urlopen(url)
     data = file.read()
@@ -123,7 +124,7 @@ def get_content():
           video["season_id"] = None
         content.append(video)
   content = map_values(content)
-  # to_csv(content)
+  to_csv(content)
   return content
 
 
