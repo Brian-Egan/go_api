@@ -1,3 +1,4 @@
+# from urllib.request import urlopen
 import requests
 from xml.etree import ElementTree
 import csv
@@ -5,9 +6,6 @@ import datetime
 import os
 
 
-networks = [
-  "dlf"
-]
 
 def filename(base=False):
   base = base if base != False else "csv_export"
@@ -33,7 +31,7 @@ def to_csv(arr, file_name=False, file_path=""):
     for a in arr:
       wr.writerow(a)
 
-def video_properties():
+def video_props():
   return {
     "id": "video_id",
     "title": "title",
@@ -56,42 +54,34 @@ def video_properties():
     }
   }
 
-def get_content(export_csv=False):
-  networks = [
-    "dlf",
-    "ahc"
-  ]
+
+def parse_xml(export_csv=False):
+  net = "dlf"
   content = []
-  for net in networks:
-    print("Pulling for network " + net)
-    url = "http://api.discovery.com/feeds/vidora/{0}/vidora-catalog".format(net)
-    response = requests.get(url)
-    tree = ElementTree.fromstring(response.content)
-    series = {}
-    seasons = {}
-    props = video_properties()
-    for item in tree.findall("item"):
-      if item.find("contentType").text == "show":
-        series[item.find("id").text] = item.find("title").text
-      elif item.find("contentType").text == "season":
-        seasons[item.find("id").text] = item.find("title").text
-      else:
-        video = {"network_code": net, "show_title": series[item.find("showId").text]}
-        # props = video_properties()
-        for child in item.getchildren():
-          if child.tag in props:
-            if type(props[child.tag]) is str:
-              video[props[child.tag]] = child.text
-            if type(props[child.tag]) is dict:
-              for k in props[child.tag]:
-                video[props[child.tag][k]] = child.find(k).text
-        if (video["video_type"] == "event" or video["video_type"] == "limited"):
-            video["season_id"] = None
-        content.append(video)
+  url = "http://api.discovery.com/feeds/vidora/{0}/vidora-catalog".format(net)
+  response = requests.get(url)
+  tree = ElementTree.fromstring(response.content)
+  series = {}
+  seasons = {}
+  for item in tree.findall("item"):
+    if item.find("contentType").text == "show":
+      series[item.find("id").text] = item.find("title").text
+    elif item.find("contentType").text == "season":
+      seasons[item.find("id").text] = item.find("title").text
+    else:
+      video = {"network_code": net, "show_title": series[item.find("showId").text]}
+      props = video_props()
+      for child in item.getchildren():
+        if child.tag in props:
+          if type(props[child.tag]) is str:
+            video[props[child.tag]] = child.text
+          if type(props[child.tag]) is dict:
+            for k in props[child.tag]:
+              video[props[child.tag][k]] = child.find(k).text
+      if (video["video_type"] == "event" or video["video_type"] == "limited"):
+          video["season_id"] = None
+      content.append(video)
   content = map_values(content)
   if export_csv == True:
     to_csv(content)
   return content
-
-
-
